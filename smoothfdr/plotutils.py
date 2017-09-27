@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 from scipy.sparse import csc_matrix, dia_matrix, linalg as sla
-from utils import *
+from .utils import *
 
 FIG_FONTSIZE = 18
 FIG_TITLE_FONTSIZE = 28
@@ -37,7 +37,7 @@ def plot_fmri_results(grid_data, weights, d2f, filename):
     plot_2d(filename, grid_data, weights=points.flatten())
 
 def plot_3d(filename, data, weights=None, true_weights=None, posteriors=None, discoveries=None, axis=0):
-    for i in xrange(data.shape[axis]):
+    for i in range(data.shape[axis]):
         if axis == 0:
             d = np.array(data[i])
             w = np.array(weights[i]) if weights is not None else None

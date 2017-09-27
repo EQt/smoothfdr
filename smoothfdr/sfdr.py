@@ -9,11 +9,11 @@ import csv
 import sys
 from scipy.sparse import csc_matrix, dia_matrix, linalg as sla
 from scipy.stats import norm
-from smoothed_fdr import SmoothedFdr, GaussianKnown, calc_plateaus
-from normix import GridDistribution, predictive_recursion, empirical_null
-import signal_distributions
-from utils import *
-from plotutils import *
+from .smoothed_fdr import SmoothedFdr, GaussianKnown, calc_plateaus
+from .normix import GridDistribution, predictive_recursion, empirical_null
+from . import signal_distributions
+from .utils import *
+from .plotutils import *
 
 
 def main():
@@ -40,16 +40,16 @@ def main():
     data = np.loadtxt(args.data_file, delimiter=',', skiprows=1 if args.data_header else 0)
 
     if args.verbose:
-        print 'Estimating null distribution empirically via Efron\'s method.'
+        print('Estimating null distribution empirically via Efron\'s method.')
 
     null_mean, null_stdev = empirical_null(data.flatten())
     null_dist = GaussianKnown(null_mean, null_stdev)
 
     if args.verbose:
-        print 'Null: N({0}, {1}^2)'.format(null_mean, null_stdev)
+        print(('Null: N({0}, {1}^2)'.format(null_mean, null_stdev)))
 
     if args.verbose:
-        print 'Performing predictive recursion to estimate the signal distribution [{0}, {1}] ({2} bins)'.format(args.pr_grid_x[0], args.pr_grid_x[1], args.pr_grid_x[2])
+        print(('Performing predictive recursion to estimate the signal distribution [{0}, {1}] ({2} bins)'.format(args.pr_grid_x[0], args.pr_grid_x[1], args.pr_grid_x[2])))
     
     grid_x = np.linspace(args.pr_grid_x[0], args.pr_grid_x[1], args.pr_grid_x[2])
     signal_data = data.flatten()

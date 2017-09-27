@@ -9,11 +9,11 @@ import csv
 import sys
 from scipy.sparse import csc_matrix, dia_matrix, linalg as sla
 from scipy.stats import norm
-from smoothed_fdr import SmoothedFdr, GaussianKnown, calc_plateaus
-from normix import GridDistribution, predictive_recursion, empirical_null
-import signal_distributions
-from utils import *
-from plotutils import *
+from .smoothed_fdr import SmoothedFdr, GaussianKnown, calc_plateaus
+from .normix import GridDistribution, predictive_recursion, empirical_null
+from . import signal_distributions
+from .utils import *
+from .plotutils import *
 
 
 def calculate_1d_signal_weights(split_points, split_weights):
@@ -52,7 +52,7 @@ def load_data(filename, header=True):
 
         # skip the header line
         if header:
-            reader.next()
+            next(reader)
 
         # read in all the rows
         for line in reader:
@@ -68,7 +68,7 @@ def load_neurodata(filename, header=True):
         
         # skip the header line
         if header:
-            reader.next()
+            next(reader)
 
         rows = []
         for line in reader:
@@ -98,7 +98,7 @@ def save_plateaus(plateaus, filename):
 def load_plateaus(filename):
     with open(filename, 'r') as f:
         reader = csv.reader(f)
-        reader.next()
+        next(reader)
         plateaus = []
         for line in reader:
             vals = line[2:]
@@ -262,7 +262,7 @@ def main():
 
     if args.generate_data:
         if args.verbose:
-            print 'Generating data and saving to {0}'.format(args.data_file)
+            print(('Generating data and saving to {0}'.format(args.data_file)))
 
         signal_weights = calc_signal_weights(args)
 
@@ -276,7 +276,7 @@ def main():
         save_data(signals, args.signals_file)
     elif args.data_file is not None:
         if args.verbose:
-            print 'Loading data from {0}'.format(args.data_file)
+            print(('Loading data from {0}'.format(args.data_file)))
         
         if args.dimensions == 'fmri':
             grid_data = load_neurodata(args.data_file)
@@ -292,7 +292,7 @@ def main():
         raise Exception('Either --generate_data or --data_file must be specified.')
 
     if args.plot_data is not None:
-        print 'Plotting data to {0}'.format(args.plot_data)
+        print(('Plotting data to {0}'.format(args.plot_data)))
         if args.dimensions == '1d':
             points, weights = (args.split_points, args.split_weights) if args.generate_data else (None, None)
             plot_1d_data(data, args.plot_data, split_points=points, split_weights=weights)
@@ -311,14 +311,14 @@ def main():
             plot_2d(args.plot_data, empty_bg)
 
     if args.empirical_null:
-        print 'Estimating null distribution empirically via Efron\'s method.'
+        print('Estimating null distribution empirically via Efron\'s method.')
         null_mean, null_stdev = empirical_null(data.flatten()) # use the default parameters
         null_dist = GaussianKnown(null_mean, null_stdev)
-        print 'Null: N({0}, {1}^2)'.format(null_mean, null_stdev)
+        print(('Null: N({0}, {1}^2)'.format(null_mean, null_stdev)))
     else:
-        print 'Using known null distribution: N({0}, {1}^2)'.format(
+        print(('Using known null distribution: N({0}, {1}^2)'.format(
                                                     args.null_mean,
-                                                    args.null_stdev)
+                                                    args.null_stdev)))
         null_dist = GaussianKnown(args.null_mean, args.null_stdev)
 
     if args.save_oracle_posteriors:
@@ -327,11 +327,11 @@ def main():
         oracle_null_weight = (1-signal_weights) * null_dist.pdf(data)
         oracle_posteriors = oracle_signal_weight / (oracle_signal_weight + oracle_null_weight)
         if args.verbose:
-            print 'Saving oracle posteriors to {0}'.format(args.save_oracle_posteriors)
+            print(('Saving oracle posteriors to {0}'.format(args.save_oracle_posteriors)))
         np.savetxt(args.save_oracle_posteriors, oracle_posteriors, delimiter=",")
 
     if args.estimate_signal:
-        print 'Performing predictive recursion to estimate the signal distribution [{0}, {1}] ({2} bins)'.format(args.pr_grid_x[0], args.pr_grid_x[1], args.pr_grid_x[2])
+        print(('Performing predictive recursion to estimate the signal distribution [{0}, {1}] ({2} bins)'.format(args.pr_grid_x[0], args.pr_grid_x[1], args.pr_grid_x[2])))
         grid_x = np.linspace(args.pr_grid_x[0], args.pr_grid_x[1], args.pr_grid_x[2])
         signal_data = data.flatten()
         if args.dimensions == 'fmri' and args.positive_signal:
@@ -343,7 +343,7 @@ def main():
                              nullprob=args.pr_nullprob, decay=args.pr_decay)
 
         if args.pr_save_sweeporder:
-            print 'Saving sweep order to file: {0}'.format(args.pr_save_sweeporder)
+            print(('Saving sweep order to file: {0}'.format(args.pr_save_sweeporder)))
             save_sweeporder(data.flatten(), pr_results['sweeporder'], args.pr_save_sweeporder)
 
         # Get the estimated distribution
@@ -351,7 +351,7 @@ def main():
 
         if args.save_signal:
             if args.verbose:
-                print 'Saving estimated signal to {0}'.format(args.save_signal)
+                print(('Saving estimated signal to {0}'.format(args.save_signal)))
 
             with open(args.save_signal, 'w') as f:
                 writer = csv.writer(f)
@@ -359,7 +359,7 @@ def main():
                 writer.writerow(pr_results['y_signal'])
 
         if args.plot_signal:
-            print 'Plotting estimated signal to {0}'.format(args.plot_signal)
+            print(('Plotting estimated signal to {0}'.format(args.plot_signal)))
             fig = plt.figure()
             plt.tick_params(axis='both', which='major', labelsize=FIG_TICK_LABEL_SIZE, width=FIG_TICK_WIDTH)
             x = np.linspace(args.plot_signal_bounds[0], args.plot_signal_bounds[1], 100)
@@ -383,10 +383,10 @@ def main():
         # Use the estimated distribution from here on out
         signal_dist = estimated_dist
     else:
-        print 'Using known signal distribution: {0}'.format(signal_dist)
+        print(('Using known signal distribution: {0}'.format(signal_dist)))
 
     if args.verbose:
-        print 'Creating penalty matrix'
+        print('Creating penalty matrix')
     
     if args.dimensions == '1d':
         penalties = sparse_1d_penalty_matrix(len(data))
@@ -400,13 +400,13 @@ def main():
         penalties = load_trails(args.trails)
 
     if args.verbose:
-        print 'Starting Smoothed FDR Experiment'
+        print('Starting Smoothed FDR Experiment')
 
     fdr = SmoothedFdr(signal_dist, null_dist)
 
     if args.solution_path:
         if args.verbose:
-            print 'Finding optimal penalty (lambda) via solution path.'
+            print('Finding optimal penalty (lambda) via solution path.')
 
         if args.dimensions == 'fmri':
             grid_map = d2f
@@ -430,13 +430,13 @@ def main():
 
         if args.plot_path:
             if args.verbose:
-                print 'Plotting penalty (lambda) solution path to {0}'.format(args.plot_path)
+                print(('Plotting penalty (lambda) solution path to {0}'.format(args.plot_path)))
 
             plot_path(results, args.plot_path)
 
         if args.plot_path_results:
             if args.verbose:
-                print 'Plotting intermediary results of the solution path to {0}'.format(args.plot_path_results)
+                print(('Plotting intermediary results of the solution path to {0}'.format(args.plot_path_results)))
 
             for ith_lambda, ith_weights in zip(results['lambda'], results['c']):
                 ith_filename = args.plot_path_results.format(ith_lambda)
@@ -459,7 +459,7 @@ def main():
         _lambda = results['lambda'][results['best']]
     else:
         if args.verbose:
-            print 'Fitting values using fixed penalty (lambda) of {0}'.format(args.penalty_weight)
+            print(('Fitting values using fixed penalty (lambda) of {0}'.format(args.penalty_weight)))
 
         results = fdr.run(data.flatten(), penalties, args.penalty_weight,
                 converge=args.converge, max_steps=args.max_steps,
@@ -482,7 +482,7 @@ def main():
         
     if args.plot_results is not None:
         if args.verbose:
-            print 'Plotting results to {0}'.format(args.plot_results)
+            print(('Plotting results to {0}'.format(args.plot_results)))
         if args.dimensions == '1d':
             points, split_weights = (args.split_points, args.split_weights) if args.generate_data else (None, None)
             plot_1d_results(data, weights, args.plot_results,
@@ -498,7 +498,7 @@ def main():
 
     if args.save_weights:
         if args.verbose:
-            print 'Saving weights to {0}'.format(args.save_weights)
+            print(('Saving weights to {0}'.format(args.save_weights)))
         if args.dimensions == '3d':
             np.savetxt(args.save_weights, weights.flatten(), delimiter=",")
         else:
@@ -506,7 +506,7 @@ def main():
 
     if args.save_posteriors:
         if args.verbose:
-            print 'Saving posteriors to {0}'.format(args.save_posteriors)
+            print(('Saving posteriors to {0}'.format(args.save_posteriors)))
         if args.dimensions == '3d':
             np.savetxt(args.save_posteriors, posteriors.flatten(), delimiter=",")
         else:
@@ -519,18 +519,18 @@ def main():
 
     if args.save_discoveries:
         if args.verbose:
-            print 'Saving discoveries with FDR level of {0:.2f}% to {1}'.format(args.fdr_level*100, args.save_discoveries)
+            print(('Saving discoveries with FDR level of {0:.2f}% to {1}'.format(args.fdr_level*100, args.save_discoveries)))
         np.savetxt(args.save_discoveries, fdr_signals, delimiter=',', fmt='%d')
 
     if args.plot_discoveries:
         if args.verbose:
-            print 'Plotting discoveries with FDR level of {0:.2f}%'.format(args.fdr_level * 100)
+            print(('Plotting discoveries with FDR level of {0:.2f}%'.format(args.fdr_level * 100)))
         if args.dimensions == 'fmri':
             plot_fmri_results(grid_data, fdr_signals, d2f, args.plot_discoveries)
 
     if args.adaptive_lasso:
         if args.verbose:
-            print 'Re-running with adaptive lasso penalty (lambda={0}, gamma={1})'.format(_lambda, args.adaptive_lasso_gamma)
+            print(('Re-running with adaptive lasso penalty (lambda={0}, gamma={1})'.format(_lambda, args.adaptive_lasso_gamma)))
 
         if args.solution_path:
             best_idx = results['best']
@@ -544,7 +544,7 @@ def main():
         adaptive_weights = (np.abs(penalties.dot(ols_weights)) ** -args.adaptive_lasso_gamma).clip(0, 1e6)
         
         if args.verbose:
-            print 'Adaptive weights range: [{0}, {1}]'.format(adaptive_weights.min(), adaptive_weights.max())
+            print(('Adaptive weights range: [{0}, {1}]'.format(adaptive_weights.min(), adaptive_weights.max())))
 
         adaptive_weights = dia_matrix(([adaptive_weights], 0), shape=(len(adaptive_weights), len(adaptive_weights)))
         adaptive_penalties = (penalties.T * adaptive_weights).T
@@ -568,7 +568,7 @@ def main():
 
         if args.plot_adaptive is not None:
             if args.verbose:
-                print 'Plotting adaptive lasso results to {0}'.format(args.plot_adaptive)
+                print(('Plotting adaptive lasso results to {0}'.format(args.plot_adaptive)))
             if args.dimensions == '1d':
                 points, split_weights = (args.split_points, args.split_weights) if args.generate_data else (None, None)
                 plot_1d_results(data, weights, args.plot_adaptive,
@@ -582,17 +582,17 @@ def main():
 
     if args.postprocess_plateaus:
         if args.verbose:
-            print 'Post-processing plateaus via unpenalized 1-d regression.'
+            print('Post-processing plateaus via unpenalized 1-d regression.')
         weights, posteriors = fdr.plateau_regression(plateaus, data, grid_map=d2f if args.dimensions=='fmri' else None, verbose=args.verbose)
 
     if args.save_plateaus:
         if args.verbose:
-            print 'Saving plateaus to {0}'.format(args.save_plateaus)
+            print(('Saving plateaus to {0}'.format(args.save_plateaus)))
         save_plateaus(plateaus, args.save_plateaus)
     
     if args.save_final_weights:
         if args.verbose:
-            print 'Saving weights to {0}'.format(args.save_final_weights)
+            print(('Saving weights to {0}'.format(args.save_final_weights)))
         if args.dimensions == '3d':
             np.savetxt(args.save_final_weights, weights.flatten(), delimiter=",")
         else:
@@ -600,7 +600,7 @@ def main():
 
     if args.save_final_posteriors:
         if args.verbose:
-            print 'Saving posteriors to {0}'.format(args.save_final_posteriors)
+            print(('Saving posteriors to {0}'.format(args.save_final_posteriors)))
         if args.dimensions == '3d':
             np.savetxt(args.save_final_posteriors, posteriors.flatten(), delimiter=",")
         else:
@@ -609,7 +609,7 @@ def main():
 
     if args.plot_final:
         if args.verbose:
-            print 'Plotting final results to {0}'.format(args.plot_final)
+            print(('Plotting final results to {0}'.format(args.plot_final)))
         if args.dimensions == '1d':
             points, split_weights = (args.split_points, args.split_weights) if args.generate_data else (None, None)
             plot_1d_results(data, weights, args.plot_final,
@@ -629,7 +629,7 @@ def main():
         fdr_signals = calc_fdr(posteriors, args.fdr_level)
     if args.plot_final_discoveries:
         if args.verbose:
-            print 'Plotting discoveries with FDR level of {0:.2f}%'.format(args.fdr_level * 100)
+            print(('Plotting discoveries with FDR level of {0:.2f}%'.format(args.fdr_level * 100)))
         if args.dimensions == 'fmri':
             plot_fmri_results(grid_data, fdr_signals, d2f, args.plot_final_discoveries)
 

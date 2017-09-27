@@ -3,11 +3,11 @@ import argparse
 import csv
 import sys
 from scipy.stats import norm
-from smoothed_fdr import GaussianKnown, calc_plateaus
-from normix import GridDistribution, predictive_recursion, empirical_null
-import signal_distributions
-from utils import generate_data, ProxyDistribution
-from plotutils import plot_2d
+from .smoothed_fdr import GaussianKnown, calc_plateaus
+from .normix import GridDistribution, predictive_recursion, empirical_null
+from . import signal_distributions
+from .utils import generate_data, ProxyDistribution
+from .plotutils import plot_2d
 
 def calculate_signal_weights(width, height, default_weight, x_min, x_max, y_min, y_max, weights):
     '''Generate signal weights from the user-specified splits.'''
@@ -54,7 +54,7 @@ def main():
     args = parser.parse_args()
 
     if args.verbose:
-            print 'Generating data and saving to {0}'.format(args.data_file)
+            print(('Generating data and saving to {0}'.format(args.data_file)))
 
     # Get the form of the signal distribution
     if args.signal_dist_name:
