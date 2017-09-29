@@ -106,7 +106,10 @@ def empirical_null(z, nmids=150, pct=-0.01, pct0=0.25, df=4, verbose=0):
     # Form a polynomial basis and multiply by z-counts
     X = np.array([mids ** i for i in range(df+1)]).T
     beta0 = np.zeros(df+1)
-    loglambda_loss = lambda beta, X, y: -((X * y[:,np.newaxis]).dot(beta) - np.exp(X.dot(beta).clip(-20,20))).sum() + 1e-6*np.sqrt((beta ** 2).sum())
+    loglambda_loss = lambda beta, X, y: \
+                     -((X * y[:,np.newaxis]).dot(beta) \
+                     -np.exp(X.dot(beta).clip(-20,20))).sum() \
+                     + 1e-6*np.sqrt((beta ** 2).sum())
     results = fmin_bfgs(loglambda_loss, beta0, args=(X, zcounts), disp=verbose)
     a = np.linspace(-3,3,1000)
     B = np.array([a ** i for i in range(df+1)]).T
