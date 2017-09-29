@@ -15,7 +15,8 @@ from .normix import *
 from .utils import calc_fdr
 
 
-def smooth_fdr(data, fdr_level, edges=None, initial_values=None, verbose=0, null_dist=None, num_sweeps=10, missing_val=None):
+def smooth_fdr(data, fdr_level, edges=None, initial_values=None, verbose=0,
+               null_dist=None, num_sweeps=10, missing_val=None):
     flat_data = data.flatten()
     nonmissing_flat_data = flat_data
 
@@ -77,13 +78,14 @@ def smooth_fdr(data, fdr_level, edges=None, initial_values=None, verbose=0, null
 
     return results
 
+
 def solution_path_smooth_fdr(data, solver, null_dist, signal_dist, min_lambda=0.20, max_lambda=1.5, lambda_bins=30, verbose=0, initial_values=None):
         '''Follows the solution path of the generalized lasso to find the best lambda value.'''
         lambda_grid = np.exp(np.linspace(np.log(max_lambda), np.log(min_lambda), lambda_bins))
-        aic_trace = np.zeros(lambda_grid.shape) # The AIC score for each lambda value
-        aicc_trace = np.zeros(lambda_grid.shape) # The AICc score for each lambda value (correcting for finite sample size)
-        bic_trace = np.zeros(lambda_grid.shape) # The BIC score for each lambda value
-        dof_trace = np.zeros(lambda_grid.shape) # The degrees of freedom of each final solution
+        aic_trace = np.zeros(lambda_grid.shape)   # The AIC score for each lambda value
+        aicc_trace = np.zeros(lambda_grid.shape)  # The AICc score for each lambda value (correcting for finite sample size)
+        bic_trace = np.zeros(lambda_grid.shape)   # The BIC score for each lambda value
+        dof_trace = np.zeros(lambda_grid.shape)   # The degrees of freedom of each final solution
         log_likelihood_trace = np.zeros(lambda_grid.shape)
         beta_trace = []
         u_trace = []
@@ -115,7 +117,7 @@ def solution_path_smooth_fdr(data, solver, null_dist, signal_dist, min_lambda=0.
 
             # Calculate AIC = 2k - 2ln(L)
             aic_trace[i] = 2. * dof_trace[i] - 2. * log_likelihood_trace[i]
-            
+
             # Calculate AICc = AIC + 2k * (k+1) / (n - k - 1)
             aicc_trace[i] = aic_trace[i] + 2 * dof_trace[i] * (dof_trace[i]+1) / (data.shape[0] - dof_trace[i] - 1.)
 
@@ -157,6 +159,7 @@ def solution_path_smooth_fdr(data, solver, null_dist, signal_dist, min_lambda=0.
                 'lambda': lambda_grid[best_idx],
                 'plateaus': best_plateaus}
 
+
 def fixed_penalty_smooth_fdr(data, solver, _lambda, null_dist, signal_dist, initial_values=None, verbose=0):
     converge = 1e-6
     max_steps = 30
@@ -166,10 +169,10 @@ def fixed_penalty_smooth_fdr(data, solver, _lambda, null_dist, signal_dist, init
     w_iters = []
     beta_iters = []
     c_iters = []
-    delta_iters = []    
+    delta_iters = []
 
     delta = converge + 1
-        
+
     if initial_values is None:
         beta = np.zeros(data.shape)
         prior_prob = np.exp(beta) / (1 + np.exp(beta))
@@ -179,7 +182,7 @@ def fixed_penalty_smooth_fdr(data, solver, _lambda, null_dist, signal_dist, init
 
     prev_nll = 0
     cur_step = 0
-    
+
     while delta > converge and cur_step < max_steps:
         if verbose:
             print(('Step #{0}'.format(cur_step)))
@@ -201,7 +204,7 @@ def fixed_penalty_smooth_fdr(data, solver, _lambda, null_dist, signal_dist, init
         # Get the signal probabilities
         prior_prob = ilogit(beta)
         cur_nll = _data_negative_log_likelihood(data, prior_prob, null_dist, signal_dist)
-        
+
         # Track the change in log-likelihood to see if we've converged
         delta = np.abs(cur_nll - prev_nll) / (prev_nll + converge)
 
@@ -225,7 +228,7 @@ def fixed_penalty_smooth_fdr(data, solver, _lambda, null_dist, signal_dist, init
             print(('\tbeta: [{0:.4f}, {1:.4f}]'.format(beta.min(), beta.max())))
             print(('\tprior_prob:    [{0:.4f}, {1:.4f}]'.format(prior_prob.min(), prior_prob.max())))
             print(('\tpost_prob:    [{0:.4f}, {1:.4f}]'.format(post_prob.min(), post_prob.max())))
-            
+
     w_iters = np.array(w_iters)
     beta_iters = np.array(beta_iters)
     c_iters = np.array(c_iters)
@@ -237,11 +240,13 @@ def fixed_penalty_smooth_fdr(data, solver, _lambda, null_dist, signal_dist, init
             'w_iters': w_iters, 'beta_iters': beta_iters,
             'c_iters': c_iters, 'delta_iters': delta_iters}
 
+
 def _data_negative_log_likelihood(data, prior_prob, null_dist, signal_dist):
     '''Calculate the negative log-likelihood of the data given the weights.'''
     signal_weight = prior_prob * signal_dist.pdf(data)
     null_weight = (1-prior_prob) * null_dist.pdf(data)
     return -np.log(signal_weight + null_weight).sum()
+
 
 def _e_step(data, prior_prob, null_dist, signal_dist):
     '''Calculate the complete-data sufficient statistics (weights vector).'''
@@ -250,9 +255,10 @@ def _e_step(data, prior_prob, null_dist, signal_dist):
     post_prob = signal_weight / (signal_weight + null_weight)
     return post_prob
 
+
 def _m_step(beta, prior_prob, post_prob, _lambda,
-                solver, converge, max_steps,
-                verbose, initial_values):
+            solver, converge, max_steps,
+            verbose, initial_values):
     '''
     Alternating Second-order Taylor-series expansion about the current iterate
     '''
@@ -302,11 +308,11 @@ def _m_step(beta, prior_prob, post_prob, _lambda,
 
     return beta, initial_values
 
+
 def _m_log_likelihood(post_prob, beta):
     '''Calculate the log-likelihood of the betas given the weights and data.'''
     return (np.log(1 + np.exp(beta)) - post_prob * beta).sum()
 
+
 def ilogit(x):
     return 1. / (1. + np.exp(-x))
-
-
