@@ -11,8 +11,9 @@ from pygfl.solver import TrailSolver
 from pygfl.trails import decompose_graph, save_chains
 from pygfl.utils import chains_to_trails, calc_plateaus, hypercube_edges
 from .smoothed_fdr import GaussianKnown
-from smoothfdr.normix import *
-from smoothfdr.utils import calc_fdr
+from .normix import *
+from .utils import calc_fdr
+
 
 def smooth_fdr(data, fdr_level, edges=None, initial_values=None, verbose=0, null_dist=None, num_sweeps=10, missing_val=None):
     flat_data = data.flatten()
