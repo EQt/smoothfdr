@@ -3,6 +3,7 @@ from scipy.stats import norm as norm
 from scipy.optimize import fmin_bfgs
 from copy import deepcopy
 
+
 class GridDistribution:
     def __init__(self, x, y):
         self.x = x
@@ -18,14 +19,16 @@ class GridDistribution:
         rhs_dist = np.abs(self.x[rhs] - data)
         lhs_dist = np.abs(self.x[lhs] - data)
         denom = rhs_dist + lhs_dist
-        denom[denom == 0] = 1. # handle the zero-distance edge-case
+        denom[denom == 0] = 1.  # handle the zero-distance edge-case
         rhs_weight = 1.0 - rhs_dist / denom
         lhs_weight = 1.0 - rhs_weight
 
         return lhs_weight * self.y[lhs] + rhs_weight * self.y[rhs]
 
+
 def trapezoid(x, y):
     return np.sum((x[1:] - x[0:-1]) * (y[1:] + y[0:-1]) / 2.)
+
 
 def generate_sweeps(num_sweeps, num_samples):
     results = []
@@ -35,15 +38,17 @@ def generate_sweeps(num_sweeps, num_samples):
         results.extend(a)
     return np.array(results)
 
+
 def predictive_recursion(z, num_sweeps, grid_x, mu0=0., sig0=1.,
-                            nullprob=1.0, decay=-0.67):
+                         nullprob=1.0, decay=-0.67):
     sweeporder = generate_sweeps(num_sweeps, len(z))
     theta_guess = np.ones(len(grid_x)) / float(len(grid_x))
     return predictive_recursion_fdr(z, sweeporder, grid_x, theta_guess,
                                     mu0, sig0, nullprob, decay)
 
-def predictive_recursion_fdr(z, sweeporder, grid_x, theta_guess, mu0 = 0.,
-                            sig0 = 1.0, nullprob = 1.0, decay = -0.67):
+
+def predictive_recursion_fdr(z, sweeporder, grid_x, theta_guess, mu0=0.,
+                             sig0=1.0, nullprob=1.0, decay=-0.67):
     gridsize = grid_x.shape[0]
     theta_subdens = deepcopy(theta_guess)
     pi0 = nullprob
@@ -68,7 +73,7 @@ def predictive_recursion_fdr(z, sweeporder, grid_x, theta_guess, mu0 = 0.,
         joint1 = norm.pdf(grid_x, x - mu0, sig0) * theta_subdens
         m0 = pi0 * norm.pdf(x, mu0, sig0)
         m1 = trapezoid(grid_x, joint1)
-        y_mix[i] = m0 + m1;
+        y_mix[i] = m0 + m1
         y_signal[i] = m1 / (1. - pi0)
 
     return {'grid_x': grid_x,
@@ -78,8 +83,10 @@ def predictive_recursion_fdr(z, sweeporder, grid_x, theta_guess, mu0 = 0.,
             'y_mix': y_mix,
             'y_signal': y_signal}
 
+
 def empirical_null(z, nmids=150, pct=-0.01, pct0=0.25, df=4, verbose=0):
-    '''Estimate f(z) and f_0(z) using a polynomial approximation to Efron (2004)'s method.'''
+    '''Estimate f(z) and f_0(z) using a polynomial approximation
+       to Efron (2004)'s method.'''
     N = len(z)
     med = np.median(z)
     lb = med + (1 - pct) * (z.min() - med)
